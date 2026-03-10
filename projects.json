@@ -1,0 +1,13 @@
+{
+  "projects": [
+    {
+      "name": "gui-ai-project",
+      "workspace": "/home/kss930/analytics_project/gui-ai-project",
+      "enabled": true,
+      "interval": 2.0,
+      "max_feedback_loops": 2,
+      "docker_agent_cmd": null,
+      "validator_agent_cmd": null
+    }
+  ]
+}
