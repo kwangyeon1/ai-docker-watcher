@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import shlex
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -58,6 +59,42 @@ def parse_args() -> argparse.Namespace:
         "--clear-validator-agent-cmd",
         action="store_true",
         help="remove validator agent command from project config",
+    )
+
+    set_bridge_parser = subparsers.add_parser("set-bridge", help="configure bridge-based AI agents")
+    set_bridge_parser.add_argument("--name", required=True, help="project name")
+    set_bridge_parser.add_argument(
+        "--docker-provider",
+        choices=["codex", "claude", "custom"],
+        help="docker agent provider",
+    )
+    set_bridge_parser.add_argument(
+        "--validator-provider",
+        choices=["codex", "claude", "custom"],
+        help="validator agent provider",
+    )
+    set_bridge_parser.add_argument(
+        "--docker-provider-command",
+        help="provider command used by docker bridge when provider=custom",
+    )
+    set_bridge_parser.add_argument(
+        "--validator-provider-command",
+        help="provider command used by validator bridge when provider=custom",
+    )
+    set_bridge_parser.add_argument(
+        "--clear-docker-agent-cmd",
+        action="store_true",
+        help="remove docker agent command from project config",
+    )
+    set_bridge_parser.add_argument(
+        "--clear-validator-agent-cmd",
+        action="store_true",
+        help="remove validator agent command from project config",
+    )
+    set_bridge_parser.add_argument(
+        "--python-bin",
+        default="python",
+        help="python executable used in generated bridge command",
     )
 
     run_parser = subparsers.add_parser("run", help="run watchers")
@@ -186,6 +223,67 @@ def cmd_update(registry: ProjectRegistry, args: argparse.Namespace) -> int:
     return 0
 
 
+def _build_bridge_cmd(
+    role: str,
+    provider: str,
+    python_bin: str,
+    provider_command: str | None,
+) -> str:
+    bridge_script = Path(__file__).resolve().parent / "bridge.py"
+    cmd = [
+        python_bin,
+        str(bridge_script),
+        "--role",
+        role,
+        "--provider",
+        provider,
+    ]
+    if provider_command:
+        cmd.extend(["--provider-command", provider_command])
+    return shlex.join(cmd)
+
+
+def cmd_set_bridge(registry: ProjectRegistry, args: argparse.Namespace) -> int:
+    docker_agent_cmd = None
+    validator_agent_cmd = None
+
+    if args.docker_provider:
+        docker_agent_cmd = _build_bridge_cmd(
+            role="docker",
+            provider=args.docker_provider,
+            python_bin=args.python_bin,
+            provider_command=args.docker_provider_command,
+        )
+    if args.validator_provider:
+        validator_agent_cmd = _build_bridge_cmd(
+            role="validator",
+            provider=args.validator_provider,
+            python_bin=args.python_bin,
+            provider_command=args.validator_provider_command,
+        )
+
+    if args.clear_docker_agent_cmd:
+        docker_agent_cmd = ""
+    if args.clear_validator_agent_cmd:
+        validator_agent_cmd = ""
+
+    if (
+        docker_agent_cmd is None
+        and validator_agent_cmd is None
+        and not args.clear_docker_agent_cmd
+        and not args.clear_validator_agent_cmd
+    ):
+        raise ValueError("set-bridge requires provider selection or clear flags")
+
+    registry.update_project(
+        name=args.name,
+        docker_agent_cmd=docker_agent_cmd,
+        validator_agent_cmd=validator_agent_cmd,
+    )
+    print(f"Updated bridge settings: {args.name}")
+    return 0
+
+
 def _select_projects(projects: list[ProjectEntry], args: argparse.Namespace) -> list[ProjectEntry]:
     selected = [p for p in projects if p.enabled]
 
@@ -242,6 +340,8 @@ def main() -> None:
             raise SystemExit(cmd_disable(registry, args))
         if args.command == "update":
             raise SystemExit(cmd_update(registry, args))
+        if args.command == "set-bridge":
+            raise SystemExit(cmd_set_bridge(registry, args))
         if args.command == "run":
             raise SystemExit(cmd_run(registry, args))
         raise SystemExit(2)

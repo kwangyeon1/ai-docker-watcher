@@ -87,6 +87,22 @@ ai-docker-watcher update --name gui-ai-project \
   --validator-agent-cmd "python /opt/agents/validator_worker.py"
 ```
 
+Bridge presets (Codex/Claude/Custom) for both agents:
+
+```bash
+ai-docker-watcher set-bridge --name gui-ai-project \
+  --docker-provider codex \
+  --validator-provider claude
+```
+
+Custom provider command via bridge:
+
+```bash
+ai-docker-watcher set-bridge --name gui-ai-project \
+  --docker-provider custom \
+  --docker-provider-command "my-ai-cli --json"
+```
+
 Remove command settings:
 
 ```bash
@@ -99,6 +115,17 @@ ai-docker-watcher update --name gui-ai-project --clear-validator-agent-cmd
 Per-project commands are configured in `projects.json` (not environment variables).
 
 Input is provided to each command as JSON through stdin. Output must be JSON.
+
+`set-bridge` generates project commands like:
+
+- `python /abs/path/ai_docker_watcher/bridge.py --role docker --provider codex`
+- `python /abs/path/ai_docker_watcher/bridge.py --role validator --provider claude`
+
+`ai_docker_watcher.bridge` is a common adapter:
+
+- reads watcher JSON from stdin
+- calls selected provider (codex/claude/custom)
+- normalizes provider output to watcher JSON schema
 
 ### Docker agent output format
 
