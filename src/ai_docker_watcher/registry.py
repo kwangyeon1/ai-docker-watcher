@@ -12,6 +12,7 @@ class ProjectEntry:
     enabled: bool = True
     interval: float = 2.0
     max_feedback_loops: int = 2
+    artifact_dir: str = ".vibe-docker"
     docker_agent_cmd: str | None = None
     validator_agent_cmd: str | None = None
 
@@ -23,6 +24,7 @@ class ProjectEntry:
             enabled=bool(payload.get("enabled", True)),
             interval=float(payload.get("interval", 2.0)),
             max_feedback_loops=int(payload.get("max_feedback_loops", 2)),
+            artifact_dir=str(payload.get("artifact_dir", ".vibe-docker")),
             docker_agent_cmd=payload.get("docker_agent_cmd"),
             validator_agent_cmd=payload.get("validator_agent_cmd"),
         )
@@ -34,6 +36,7 @@ class ProjectEntry:
             "enabled": self.enabled,
             "interval": self.interval,
             "max_feedback_loops": self.max_feedback_loops,
+            "artifact_dir": self.artifact_dir,
             "docker_agent_cmd": self.docker_agent_cmd,
             "validator_agent_cmd": self.validator_agent_cmd,
         }
@@ -91,6 +94,7 @@ class ProjectRegistry:
         workspace: str | None = None,
         interval: float | None = None,
         max_feedback_loops: int | None = None,
+        artifact_dir: str | None = None,
         docker_agent_cmd: str | None = None,
         validator_agent_cmd: str | None = None,
     ) -> None:
@@ -105,6 +109,8 @@ class ProjectRegistry:
                 p.interval = interval
             if max_feedback_loops is not None:
                 p.max_feedback_loops = max_feedback_loops
+            if artifact_dir is not None:
+                p.artifact_dir = artifact_dir
             if docker_agent_cmd is not None:
                 p.docker_agent_cmd = docker_agent_cmd or None
             if validator_agent_cmd is not None:

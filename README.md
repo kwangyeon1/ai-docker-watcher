@@ -8,18 +8,18 @@ Event-driven sidecar agent runner for Docker generation and validation.
 - Publishes events to a lightweight event bus
 - Runs a Docker-focused agent when Docker-impacting files change
 - Runs a Validator agent before/after build checks
-- Persists shared context in `.vibe/` so your main AI editor/CLI can read it
+- Persists shared context in `.vibe-docker/` by default (configurable) so your main AI editor/CLI can read it
 
 ## Architecture
 
 - Main AI editor/CLI remains primary
 - `ai-docker-watcher` runs beside it as a sidecar
-- Collaboration is indirect via shared state under `.vibe/`
+- Collaboration is indirect via shared state under the configured artifact directory (default: `.vibe-docker/`)
 
 ```text
 Main AI -> file changes -> watcher -> event bus
                           -> docker agent -> validator -> feedback loop
-                                            -> .vibe/context|state|reports|events
+                                            -> .vibe-docker/context|state|reports|events
 ```
 
 ## Project registry mode
@@ -35,6 +35,7 @@ Watcher targets are managed in a JSON file (`projects.json` by default).
       "enabled": true,
       "interval": 2.0,
       "max_feedback_loops": 2,
+      "artifact_dir": ".vibe-docker",
       "docker_agent_cmd": null,
       "validator_agent_cmd": null
     }
@@ -49,7 +50,8 @@ cd ai-docker-watcher
 python -m pip install -e .
 ai-docker-watcher add \
   --name gui-ai-project \
-  --workspace /home/kss930/analytics_project/gui-ai-project
+  --workspace /home/kss930/analytics_project/gui-ai-project \
+  --artifact-dir .vibe-docker
 ```
 
 List projects:
@@ -83,6 +85,7 @@ Update project commands/settings:
 
 ```bash
 ai-docker-watcher update --name gui-ai-project \
+  --artifact-dir .vibe-docker \
   --docker-agent-cmd "python /opt/agents/docker_worker.py" \
   --validator-agent-cmd "python /opt/agents/validator_worker.py"
 ```
@@ -147,19 +150,25 @@ Input is provided to each command as JSON through stdin. Output must be JSON.
 }
 ```
 
-## `.vibe` layout
+## Artifact layout (default: `.vibe-docker`)
 
 Inside target workspace:
 
-- `.vibe/context/repo_summary.md`
-- `.vibe/context/main_agent_brief.md`
-- `.vibe/context/docker_agent_brief.md`
-- `.vibe/context/validator_agent_brief.md`
-- `.vibe/state/changed_files.json`
-- `.vibe/state/task_state.json`
-- `.vibe/reports/docker_report.md`
-- `.vibe/reports/validation_report.json`
-- `.vibe/events/events.log`
+- `.vibe-docker/context/repo_summary.md`
+- `.vibe-docker/context/main_agent_brief.md`
+- `.vibe-docker/context/docker_agent_brief.md`
+- `.vibe-docker/context/validator_agent_brief.md`
+- `.vibe-docker/state/changed_files.json`
+- `.vibe-docker/state/task_state.json`
+- `.vibe-docker/reports/docker_report.md`
+- `.vibe-docker/reports/validation_report.json`
+- `.vibe-docker/events/events.log`
+
+You can customize the directory per project with:
+
+```bash
+ai-docker-watcher update --name gui-ai-project --artifact-dir .my-artifacts
+```
 
 ## Notes
 

@@ -13,8 +13,26 @@ from .router import EventRouter
 from .watchers import FileChangeWatcher
 
 
+DEFAULT_ARTIFACT_DIR = ".vibe-docker"
+
+
 def default_config_path() -> Path:
     return Path.cwd() / "projects.json"
+
+
+def _normalize_artifact_dir(value: str) -> str:
+    raw = value.strip()
+    if not raw:
+        raise ValueError("artifact dir cannot be empty")
+    path = Path(raw)
+    if path.is_absolute():
+        raise ValueError("artifact dir must be a relative path")
+    if ".." in path.parts:
+        raise ValueError("artifact dir cannot contain '..'")
+    normalized = path.as_posix().rstrip("/")
+    if normalized in {"", "."}:
+        raise ValueError("artifact dir must point to a directory name")
+    return normalized
 
 
 def parse_args() -> argparse.Namespace:
@@ -30,6 +48,11 @@ def parse_args() -> argparse.Namespace:
     add_parser.add_argument("--workspace", required=True, help="workspace path")
     add_parser.add_argument("--interval", type=float, default=2.0, help="polling interval seconds")
     add_parser.add_argument("--max-feedback-loops", type=int, default=2, help="validator->docker retry count")
+    add_parser.add_argument(
+        "--artifact-dir",
+        default=DEFAULT_ARTIFACT_DIR,
+        help="workspace-relative artifact directory (default: .vibe-docker)",
+    )
     add_parser.add_argument("--disabled", action="store_true", help="register as disabled")
     add_parser.add_argument("--docker-agent-cmd", help="external docker agent command")
     add_parser.add_argument("--validator-agent-cmd", help="external validator agent command")
@@ -48,6 +71,7 @@ def parse_args() -> argparse.Namespace:
     update_parser.add_argument("--workspace", help="new workspace path")
     update_parser.add_argument("--interval", type=float, help="new polling interval seconds")
     update_parser.add_argument("--max-feedback-loops", type=int, help="new validator->docker retry count")
+    update_parser.add_argument("--artifact-dir", help="new workspace-relative artifact directory")
     update_parser.add_argument("--docker-agent-cmd", help="set docker agent command")
     update_parser.add_argument("--validator-agent-cmd", help="set validator agent command")
     update_parser.add_argument(
@@ -100,6 +124,10 @@ def parse_args() -> argparse.Namespace:
     run_parser = subparsers.add_parser("run", help="run watchers")
     run_parser.add_argument("--name", help="run only this project name")
     run_parser.add_argument("--workspace", help="run only this workspace path")
+    run_parser.add_argument(
+        "--artifact-dir",
+        help="override workspace-relative artifact directory for this run",
+    )
     run_parser.add_argument("--once", action="store_true", help="run single pass")
 
     return parser.parse_args()
@@ -126,15 +154,16 @@ def _seed_initial_event(bus: EventBus, watcher: FileChangeWatcher) -> None:
     )
 
 
-def _build_runner(project: ProjectEntry) -> Runner:
+def _build_runner(project: ProjectEntry, artifact_dir_override: str | None = None) -> Runner:
     workspace = Path(project.workspace).resolve()
+    artifact_dir = artifact_dir_override or project.artifact_dir
 
-    store = ContextStore(workspace)
+    store = ContextStore(workspace, artifact_dir=artifact_dir)
     store.ensure()
     store.init_default_context()
 
     bus = EventBus()
-    watcher = FileChangeWatcher(workspace)
+    watcher = FileChangeWatcher(workspace, artifact_dir=artifact_dir)
     watcher.initialize()
 
     EventRouter(
@@ -163,6 +192,7 @@ def cmd_list(registry: ProjectRegistry) -> int:
         print(
             f"- name={p.name} status={status} workspace={p.workspace} "
             f"interval={p.interval}s max_feedback_loops={p.max_feedback_loops} "
+            f"artifact_dir={p.artifact_dir} "
             f"docker_agent_cmd={p.docker_agent_cmd or '-'} "
             f"validator_agent_cmd={p.validator_agent_cmd or '-'}"
         )
@@ -176,6 +206,7 @@ def cmd_add(registry: ProjectRegistry, args: argparse.Namespace) -> int:
         enabled=not args.disabled,
         interval=args.interval,
         max_feedback_loops=args.max_feedback_loops,
+        artifact_dir=_normalize_artifact_dir(args.artifact_dir),
         docker_agent_cmd=args.docker_agent_cmd,
         validator_agent_cmd=args.validator_agent_cmd,
     )
@@ -211,11 +242,13 @@ def cmd_update(registry: ProjectRegistry, args: argparse.Namespace) -> int:
         validator_agent_cmd = ""
 
     workspace = str(Path(args.workspace).resolve()) if args.workspace else None
+    artifact_dir = _normalize_artifact_dir(args.artifact_dir) if args.artifact_dir else None
     registry.update_project(
         name=args.name,
         workspace=workspace,
         interval=args.interval,
         max_feedback_loops=args.max_feedback_loops,
+        artifact_dir=artifact_dir,
         docker_agent_cmd=docker_agent_cmd,
         validator_agent_cmd=validator_agent_cmd,
     )
@@ -304,7 +337,8 @@ def cmd_run(registry: ProjectRegistry, args: argparse.Namespace) -> int:
         print("No enabled projects matched run filters.")
         return 1
 
-    runners = [_build_runner(project) for project in selected]
+    artifact_dir_override = _normalize_artifact_dir(args.artifact_dir) if args.artifact_dir else None
+    runners = [_build_runner(project, artifact_dir_override=artifact_dir_override) for project in selected]
 
     if args.once:
         print(f"Run once completed for {len(runners)} project(s).")

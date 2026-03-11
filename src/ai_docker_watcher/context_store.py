@@ -6,9 +6,10 @@ from typing import Any
 
 
 class ContextStore:
-    def __init__(self, workspace: Path) -> None:
+    def __init__(self, workspace: Path, artifact_dir: str = ".vibe-docker") -> None:
         self.workspace = workspace
-        self.vibe = workspace / ".vibe"
+        self.artifact_dir = artifact_dir
+        self.vibe = workspace / artifact_dir
         self.context = self.vibe / "context"
         self.state = self.vibe / "state"
         self.reports = self.vibe / "reports"

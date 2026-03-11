@@ -10,9 +10,11 @@ from .impact import DOCKER_IMPACT_FILES
 @dataclass
 class FileChangeWatcher:
     workspace: Path
+    artifact_dir: str = ".vibe-docker"
     ignore_prefixes: tuple[str, ...] = (
         ".git",
         ".vibe",
+        ".vibe-docker",
         "__pycache__",
         ".pytest_cache",
         "venv",
@@ -37,7 +39,8 @@ class FileChangeWatcher:
     _last_snapshot: dict[str, float] = field(default_factory=dict)
 
     def _should_track(self, rel: str) -> bool:
-        if any(rel.startswith(prefix + "/") or rel == prefix for prefix in self.ignore_prefixes):
+        ignored = self.ignore_prefixes + (self.artifact_dir,)
+        if any(rel.startswith(prefix + "/") or rel == prefix for prefix in ignored):
             return False
         name = Path(rel).name
         if name in DOCKER_IMPACT_FILES:
