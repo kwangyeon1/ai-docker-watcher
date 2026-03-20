@@ -171,8 +171,9 @@ Inside target workspace:
 `context/artifact_reference_bundle.md` is the recommended single file for your main AI to read first.
 It summarizes current state, changed files, recent failures, and points at the raw artifacts.
 
-`context/agent_brief_bundle_integration_examples.md` contains ready-to-paste snippets showing how to
-reference the bundle from `main_agent_brief.md`, `docker_agent_brief.md`, and `validator_agent_brief.md`.
+`context/agent_brief_bundle_integration_examples.md` contains ready-to-paste snippets for instruction
+files such as `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, or other AI markdown guides that should reference
+the bundle.
 
 You can customize the directory per project with:
 

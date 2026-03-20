@@ -23,8 +23,9 @@ class ContextStoreBundleTests(unittest.TestCase):
             self.assertIn("# Artifact Reference Bundle", bundle)
             self.assertIn("context/recent_failures.md", bundle)
             self.assertIn("No active validation failure is recorded.", bundle)
-            self.assertIn("# Agent Brief Bundle Integration Examples", examples)
-            self.assertIn("context/main_agent_brief.md", examples)
+            self.assertIn("# Agent Markdown Bundle Integration Examples", examples)
+            self.assertIn("`AGENTS.md`", examples)
+            self.assertIn("`CLAUDE.md` or `CODEX.md`", examples)
 
     def test_refresh_bundle_reflects_reports_and_failures(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
