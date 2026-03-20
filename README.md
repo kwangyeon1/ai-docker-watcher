@@ -3,6 +3,9 @@
 Docker 생성과 검증을 파일 변경 기반으로 자동화하는 사이드카 러너입니다.  
 메인 AI 편집기나 CLI가 주 작업을 수행하고, `ai-docker-watcher`는 옆에서 Docker 관련 변경을 감지해 `Dockerfile` 생성/수정, 검증, 피드백 루프, 산출물 문서 생성을 담당합니다.
 
+어떤상황에서 사용해야합니까? :
+- 사람이 IDE로 코드를 수정하고 개발할때, 코드 수정 내용을 토대로 러너가  `requirements.txt`, `docker-compose.yml`등을 감시하고 Dockerfile을 생성 혹은 수정및 검증까지 자동으로 합니다.
+
 ## 한국어 가이드
 
 ### 개요
