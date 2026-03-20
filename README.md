@@ -9,6 +9,7 @@ Event-driven sidecar agent runner for Docker generation and validation.
 - Runs a Docker-focused agent when Docker-impacting files change
 - Runs a Validator agent before/after build checks
 - Persists shared context in `.vibe-docker/` by default (configurable) so your main AI editor/CLI can read it
+- Generates a single bundled Markdown entrypoint so the main AI can review Docker-sidecar state from one file
 
 ## Architecture
 
@@ -158,11 +159,21 @@ Inside target workspace:
 - `.vibe-docker/context/main_agent_brief.md`
 - `.vibe-docker/context/docker_agent_brief.md`
 - `.vibe-docker/context/validator_agent_brief.md`
+- `.vibe-docker/context/artifact_reference_bundle.md`
+- `.vibe-docker/context/agent_brief_bundle_integration_examples.md`
+- `.vibe-docker/context/recent_failures.md`
 - `.vibe-docker/state/changed_files.json`
 - `.vibe-docker/state/task_state.json`
 - `.vibe-docker/reports/docker_report.md`
 - `.vibe-docker/reports/validation_report.json`
 - `.vibe-docker/events/events.log`
+
+`context/artifact_reference_bundle.md` is the recommended single file for your main AI to read first.
+It summarizes current state, changed files, recent failures, and points at the raw artifacts.
+
+`context/agent_brief_bundle_integration_examples.md` contains ready-to-paste snippets for instruction
+files such as `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, or other AI markdown guides that should reference
+the bundle.
 
 You can customize the directory per project with:
 
