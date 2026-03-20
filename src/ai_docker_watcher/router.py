@@ -41,6 +41,7 @@ class EventRouter:
                 ensure_ascii=True,
             )
         )
+        self.store.refresh_reference_bundle()
 
     def _apply_files(self, files: list[dict[str, str]]) -> None:
         for f in files:
@@ -59,6 +60,7 @@ class EventRouter:
                 "docker_related": DockerAgent.has_docker_impact(changed_files),
             },
         )
+        self.store.refresh_reference_bundle()
 
         if not DockerAgent.has_docker_impact(changed_files):
             return
@@ -88,6 +90,7 @@ class EventRouter:
                 "last_owner": "docker-agent",
             },
         )
+        self.store.refresh_reference_bundle()
 
         self.bus.publish(
             Event(
@@ -121,6 +124,7 @@ class EventRouter:
         task["validation_status"] = validation.get("status", "unknown")
         task["last_owner"] = validation.get("owner", "validator-agent")
         self.store.write_json("state/task_state.json", task)
+        self.store.refresh_reference_bundle()
 
         if validation.get("status") != "failed":
             return
@@ -133,6 +137,7 @@ class EventRouter:
         files = result.get("files", [])
         if files:
             self._apply_files(files)
+        self.store.refresh_reference_bundle()
 
         self.bus.publish(
             Event(
